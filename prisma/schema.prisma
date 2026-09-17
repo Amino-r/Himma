@@ -1,0 +1,23 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Scholarship {
+  id                      String   @id @default(uuid())
+  title                   String
+  description             String
+  degreeLevel             String
+  deadline                DateTime
+  acceptsExpiredDocuments Boolean  @default(false)
+  sourceType              String
+  sourceUrl               String
+  status                  String   @default("active")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
