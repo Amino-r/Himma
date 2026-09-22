@@ -21,3 +21,72 @@ model Scholarship {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
+
+enum ContentStatus {
+  VISIBLE
+  HIDDEN
+  DELETED
+}
+
+model Post {
+  id                String        @id @default(uuid())
+  authorId          String
+  scholarshipId     String?
+  title             String
+  body              String
+  status            ContentStatus @default(VISIBLE)
+  acceptedCommentId String?       @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  author            User          @relation(fields: [authorId], references: [id])
+  scholarship       Scholarship?  @relation(fields: [scholarshipId], references: [id])
+  comments          Comment[]     @relation("PostComments")
+  acceptedComment   Comment?      @relation("AcceptedComment", fields: [acceptedCommentId], references: [id])
+
+  @@index([scholarshipId])
+  @@index([authorId])
+}
+
+model Comment {
+  id        String        @id @default(uuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  body      String
+  status    ContentStatus @default(VISIBLE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  post      Post          @relation("PostComments", fields: [postId], references: [id])
+  author    User          @relation(fields: [authorId], references: [id])
+
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]     @relation("CommentReplies")
+
+  acceptedOnPost Post?    @relation("AcceptedComment")
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model Guide {
+  id          String      @id @default(uuid())
+  title       String
+  portalName  String
+  portalUrl   String
+  description String
+  steps       GuideStep[]
+}
+
+model GuideStep {
+  id      String @id @default(uuid())
+  guideId String
+  order   Int
+  title   String
+  content String
+
+  guide   Guide  @relation(fields: [guideId], references: [id])
+
+  @@index([guideId])
+}
