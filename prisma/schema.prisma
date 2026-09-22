@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,16 +7,151 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum HighestEducationLevel {
+  DIPLOMA
+  BACHELOR
+  MASTER
+  PHD
+}
+
+enum FieldOfStudy {
+  COMPUTER_SCIENCE
+  MEDICINE
+  ENGINEERING
+  BUSINESS
+  LAW
+  PSYCHOLOGY
+  OTHER
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  email        String @unique
+  passwordHash String
+
+  fullName String
+  role     Role
+
+  highestEducationLevel HighestEducationLevel
+  fieldOfStudy          FieldOfStudy?
+  nationality           String?
+  gpa                   Float?
+  dateOfBirth           DateTime?             @db.Date
+  graduationYear        Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+}
+
+enum Type {
+  UNIVERSITY
+  GOVERNMENT
+  NGO
+  FOUNDATION
+}
+
+model Provider {
+  id String @id @default(uuid()) @db.Uuid
+
+  name String
+  type Type
+
+  country String
+  city    String?
+
+  website  String?
+  rankings Json?
+
+  scholarships Scholarship[]
+}
+
+enum DegreeLevel {
+  DIPLOMA
+  BACHELOR
+  MASTER
+  PHD
+}
+
+enum CoverageType {
+  FULL
+  PARTIAL
+}
+
 model Scholarship {
-  id                      String   @id @default(uuid())
-  title                   String
-  description             String
-  degreeLevel             String
-  deadline                DateTime
-  acceptsExpiredDocuments Boolean  @default(false)
+  id          String @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+
+  providerId String   @db.Uuid
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  degreeLevel DegreeLevel
+  fields      String[]
+
+  coverageType    CoverageType
+  coveragePercent Int?
+
+  fundingDetails Json?
+
+  studyCountry String
+
+  opensAt  DateTime
+  deadline DateTime
+
+  allowedNationalities String[]
+
+  languageRequirements Json?
+  otherRequirements    String[]
+  requiredDocuments    Json?
+
+  applicationUrl String
+  sourceUrl      String
+
+  minGpa Float?
+  maxAge Int?
+
+  acceptsExpiredDocuments Boolean
   sourceType              String
-  sourceUrl               String
-  status                  String   @default("active")
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+
+  status String @default("active")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+}
+
+enum ApplicationStatus {
+  INTERESTED
+  IN_PROGRESS
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+model Application {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId        Int
+  scholarshipId String @db.Uuid
+
+  user        User        @relation(fields: [userId], references: [id])
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id])
+
+  status      ApplicationStatus
+  notes       String?
+  submittedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, scholarshipId])
 }
