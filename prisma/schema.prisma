@@ -30,28 +30,26 @@ enum FieldOfStudy {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-
-  email        String @unique
-  passwordHash String
-
-  fullName String
-  role     Role
-
-  highestEducationLevel HighestEducationLevel
+  id                    Int                    @id @default(autoincrement())
+  email                 String                 @unique
+  passwordHash          String
+  fullName              String
+  role                  Role
+  highestEducationLevel HighestEducationLevel?
   fieldOfStudy          FieldOfStudy?
   nationality           String?
   gpa                   Float?
-  dateOfBirth           DateTime?             @db.Date
+  dateOfBirth           DateTime               @db.Date
   graduationYear        Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   applications Application[]
+  posts        Post[]
+  comments     Comment[]
 }
 
-enum Type {
+enum ProviderType {
   UNIVERSITY
   GOVERNMENT
   NGO
@@ -59,16 +57,13 @@ enum Type {
 }
 
 model Provider {
-  id String @id @default(uuid()) @db.Uuid
-
-  name String
-  type Type
-
-  country String
-  city    String?
-
-  website  String?
-  rankings Json?
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String
+  type         ProviderType
+  country      String
+  city         String?
+  website      String?
+  rankings     Json?
 
   scholarships Scholarship[]
 }
@@ -86,47 +81,42 @@ enum CoverageType {
 }
 
 model Scholarship {
-  id          String @id @default(uuid()) @db.Uuid
-  title       String
-  description String
+  id                       String         @id @default(uuid()) @db.Uuid
+  title                    String
+  description              String
 
-  providerId String   @db.Uuid
-  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId               String         @db.Uuid
+  provider                 Provider       @relation(fields: [providerId], references: [id])
 
-  degreeLevel DegreeLevel
-  fields      String[]
+  degreeLevel              DegreeLevel
+  fields                   FieldOfStudy[]
+  coverageType             CoverageType
+  coveragePercent          Int?
+  fundingDetails           Json?
 
-  coverageType    CoverageType
-  coveragePercent Int?
+  studyCountry             String
+  opensAt                  DateTime
+  deadline                 DateTime
 
-  fundingDetails Json?
+  allowedNationalities     String[]
+  languageRequirements     Json?
+  otherRequirements        String[]
+  requiredDocuments        Json?
 
-  studyCountry String
+  minGpa                   Float?
+  maxAge                   Int?
+  acceptsExpiredDocuments  Boolean        @default(false)
 
-  opensAt  DateTime
-  deadline DateTime
+  applicationUrl           String
+  sourceType               String
+  sourceUrl                String
 
-  allowedNationalities String[]
+  status                   String         @default("active")
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
-  languageRequirements Json?
-  otherRequirements    String[]
-  requiredDocuments    Json?
-
-  applicationUrl String
-  sourceUrl      String
-
-  minGpa Float?
-  maxAge Int?
-
-  acceptsExpiredDocuments Boolean
-  sourceType              String
-
-  status String @default("active")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  applications Application[]
+  applications             Application[]
+  posts                    Post[]
 }
 
 enum ApplicationStatus {
@@ -138,20 +128,86 @@ enum ApplicationStatus {
 }
 
 model Application {
-  id String @id @default(uuid()) @db.Uuid
-
+  id            String            @id @default(uuid()) @db.Uuid
   userId        Int
-  scholarshipId String @db.Uuid
+  scholarshipId String            @db.Uuid
 
-  user        User        @relation(fields: [userId], references: [id])
-  scholarship Scholarship @relation(fields: [scholarshipId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
+  scholarship   Scholarship       @relation(fields: [scholarshipId], references: [id])
 
-  status      ApplicationStatus
-  notes       String?
-  submittedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status        ApplicationStatus
+  notes         String?
+  submittedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@unique([userId, scholarshipId])
+}
+
+enum ContentStatus {
+  VISIBLE
+  HIDDEN
+  DELETED
+}
+
+model Post {
+  id                String        @id @default(uuid())
+  authorId          Int
+  scholarshipId     String?       @db.Uuid
+  title             String
+  body              String
+  status            ContentStatus @default(VISIBLE)
+  acceptedCommentId String?       @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  author          User          @relation(fields: [authorId], references: [id])
+  scholarship     Scholarship?  @relation(fields: [scholarshipId], references: [id])
+  comments        Comment[]     @relation("PostComments")
+  acceptedComment Comment?      @relation("AcceptedComment", fields: [acceptedCommentId], references: [id])
+
+  @@index([scholarshipId])
+  @@index([authorId])
+}
+
+model Comment {
+  id        String        @id @default(uuid())
+  postId    String
+  authorId  Int
+  parentId  String?
+  body      String
+  status    ContentStatus @default(VISIBLE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  post           Post      @relation("PostComments", fields: [postId], references: [id])
+  author         User      @relation(fields: [authorId], references: [id])
+  parent         Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies        Comment[] @relation("CommentReplies")
+  acceptedOnPost Post?     @relation("AcceptedComment")
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model Guide {
+  id          String      @id @default(uuid())
+  title       String
+  portalName  String
+  portalUrl   String
+  description String
+
+  steps       GuideStep[]
+}
+
+model GuideStep {
+  id      String @id @default(uuid())
+  guideId String
+  order   Int
+  title   String
+  content String
+
+  guide   Guide  @relation(fields: [guideId], references: [id])
+
+  @@index([guideId])
 }
