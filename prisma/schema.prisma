@@ -117,6 +117,9 @@ model Scholarship {
 
   applications             Application[]
   posts                    Post[]
+
+  guideId  String?         @db.Uuid
+  guide    Guide?          @relation(fields: [guideId], references: [id])
 }
 
 enum ApplicationStatus {
@@ -151,13 +154,13 @@ enum ContentStatus {
 }
 
 model Post {
-  id                String        @id @default(uuid())
+  id                String        @id @default(uuid()) @db.Uuid
   authorId          Int
   scholarshipId     String?       @db.Uuid
   title             String
   body              String
   status            ContentStatus @default(VISIBLE)
-  acceptedCommentId String?       @unique
+  acceptedCommentId String?       @unique @db.Uuid
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -171,10 +174,10 @@ model Post {
 }
 
 model Comment {
-  id        String        @id @default(uuid())
-  postId    String
+  id        String        @id @default(uuid()) @db.Uuid
+  postId    String        @db.Uuid
   authorId  Int
-  parentId  String?
+  parentId  String?       @db.Uuid
   body      String
   status    ContentStatus @default(VISIBLE)
   createdAt DateTime      @default(now())
@@ -191,18 +194,20 @@ model Comment {
 }
 
 model Guide {
-  id          String      @id @default(uuid())
+  id          String      @id @default(uuid()) @db.Uuid
   title       String
   portalName  String
   portalUrl   String
   description String
 
   steps       GuideStep[]
+  
+  scholarships Scholarship[]
 }
 
 model GuideStep {
-  id      String @id @default(uuid())
-  guideId String
+  id      String @id @default(uuid()) @db.Uuid
+  guideId String @db.Uuid
   order   Int
   title   String
   content String
